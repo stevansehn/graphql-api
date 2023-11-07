@@ -3,9 +3,12 @@
 
 
 type Mutation {
+  loginUser(password: String, username: String): Boolean
+  logoutUser: Boolean
   registerUser(email: String, name: String, password: String, username: String): Boolean
 }
 
 type Query {
+  getMe: Int
   hello: String
 }

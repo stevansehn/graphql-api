@@ -4,8 +4,8 @@ import { ApolloServer } from "apollo-server-express";
 import session from "express-session";
 import dotenv from "dotenv";
 import Redis from "ioredis";
-import RedisStore from "connect-redis";
-// import connectRedis from "connect-redis";
+// import RedisStore from "connect-redis"
+const RedisStore = require("connect-redis").default;
 import { getMyPrismaClient } from "./db";
 import { IMyContext } from "./interface";
 import { isProd } from "./utils";
@@ -13,14 +13,13 @@ import { isProd } from "./utils";
 const main = async () => {
   dotenv.config();
 
-  const RedisClient = new Redis();
-  // const RedisStore = connectRedis(session);
+  const redisClient = new Redis();
 
   const app = express();
 
   app.use(
     session({
-      store: new RedisStore({ client: RedisClient }),
+      store: new RedisStore({ client: redisClient }),
       secret: process.env.SESSION_SECRET!,
       name: "gql-api",
       resave: false,
@@ -30,7 +29,7 @@ const main = async () => {
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24, // 1 day
         secure: isProd(),
-        sameSite: "lax",
+        sameSite: "none",
       },
     })
   );
@@ -45,7 +44,7 @@ const main = async () => {
       res,
       prisma,
       session: req.session,
-      redis: RedisClient,
+      redis: redisClient,
     }),
   });
 

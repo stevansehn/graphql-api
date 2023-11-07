@@ -44,24 +44,34 @@ export type NexusGenAllTypes = NexusGenRootTypes & NexusGenScalars
 
 export interface NexusGenFieldTypes {
   Mutation: { // field return type
+    loginUser: boolean | null; // Boolean
+    logoutUser: boolean | null; // Boolean
     registerUser: boolean | null; // Boolean
   }
   Query: { // field return type
+    getMe: number | null; // Int
     hello: string | null; // String
   }
 }
 
 export interface NexusGenFieldTypeNames {
   Mutation: { // field return type name
+    loginUser: 'Boolean'
+    logoutUser: 'Boolean'
     registerUser: 'Boolean'
   }
   Query: { // field return type name
+    getMe: 'Int'
     hello: 'String'
   }
 }
 
 export interface NexusGenArgTypes {
   Mutation: {
+    loginUser: { // args
+      password?: string | null; // String
+      username?: string | null; // String
+    }
     registerUser: { // args
       email?: string | null; // String
       name?: string | null; // String

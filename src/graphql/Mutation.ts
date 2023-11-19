@@ -1,5 +1,5 @@
-import { User } from "@prisma/client";
-import { mutationType, stringArg } from "nexus";
+import { Post, User } from "@prisma/client";
+import { intArg, mutationType, stringArg } from "nexus";
 import { IMyContext } from "../interface";
 import { hashPassword, isAuthenticated, verifyPassword } from "../utils";
 import {
@@ -7,10 +7,97 @@ import {
   ALREADY_TAKEN,
   NOT_AUTHENTICATED,
   NOT_AUTHORIZED,
+  NOT_FOUND,
 } from "../constants";
 
 export const Mutation = mutationType({
   definition(t) {
+    t.boolean("deletePost", {
+      args: {
+        id: intArg(),
+      },
+      resolve: async (
+        _,
+        { id }: Pick<Post, "id">,
+        { prisma, session }: IMyContext
+      ) => {
+        try {
+          if (isAuthenticated(session)) {
+            return new Error(NOT_AUTHENTICATED);
+          }
+
+          const post = await prisma.post.findUnique({
+            where: {
+              id,
+            },
+            select: {
+              userId: true,
+            },
+          });
+
+          if (!post){
+            return new Error(NOT_FOUND)
+          } else if (post.userId !== session.userId) {
+            return new Error(NOT_AUTHORIZED);
+          }
+
+          await prisma.post.delete({
+            where: {
+              id,
+            },
+          });
+
+          return true;
+        } catch (err) {
+          console.error("error => ", err);
+          const errorCaught = err as any;
+          if (errorCaught.code === "P2002") {
+            const errorMessage = `${errorCaught.meta.target.toString()} ${ALREADY_TAKEN}`;
+            return new Error(errorMessage);
+          } else {
+            return new Error(errorCaught.message);
+          }
+        }
+      },
+    });
+    t.boolean("createPost", {
+      args: {
+        title: stringArg(),
+        content: stringArg(),
+      },
+      resolve: async (
+        _,
+        { ...postDetails }: Pick<Post, "content" | "title">,
+        { prisma, session }: IMyContext
+      ) => {
+        try {
+          if (isAuthenticated(session)) {
+            return new Error(NOT_AUTHENTICATED);
+          }
+
+          await prisma.post.create({
+            data: {
+              ...postDetails,
+              userId: session.userId!,
+            },
+            select: {
+              id: true,
+            },
+          });
+
+          return true;
+        } catch (err) {
+          console.error("error => ", err);
+          const errorCaught = err as any;
+          if (errorCaught.code === "P2002") {
+            const errorMessage = `${errorCaught.meta.target.toString()} ${ALREADY_TAKEN}`;
+            return new Error(errorMessage);
+          } else {
+            return new Error(errorCaught.message);
+          }
+        }
+      },
+    });
     t.boolean("registerUser", {
       args: {
         name: stringArg(),
@@ -34,7 +121,11 @@ export const Mutation = mutationType({
               ...userDetails,
               password: hashedPassword,
             },
+            select: {
+              id: true,
+            },
           });
+
           return true;
         } catch (err) {
           console.error("error => ", err);
